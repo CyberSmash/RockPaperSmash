@@ -4,8 +4,19 @@
 
 #include "Grid.h"
 #include <ncurses.h>
+#include <stdlib.h>
 
-const UnitType resolutionMatrix[3][3] = {
+auto for_all = [](auto& grid, auto func) {
+    for (int i = 0; i < grid.size(); i++)
+    {
+        for (int j = 0; j < grid[i].size(); j++)
+        {
+            func(i, j, grid);
+        }
+    }
+};
+
+const UnitType winner_matrix[3][3] = {
         {UnitType::NONE, UnitType::PAPER, UnitType::ROCK},
         {UnitType::PAPER, UnitType::NONE, UnitType::SCISSORS},
         {UnitType::ROCK, UnitType::SCISSORS, UnitType::NONE}
@@ -17,10 +28,12 @@ Grid::Grid(int rows, int cols): current_grid(&grid_a), next_grid(&grid_b)
 {
     grid_a.resize(rows);
     grid_b.resize(rows);
+    resolutions.resize(rows);
     for (int i = 0; i < rows; i++)
     {
         grid_a[i].resize(cols);
         grid_b[i].resize(cols);
+        resolutions[i].resize(cols);
     }
 
     for (int i = 0; i < grid_a.size(); i++)
@@ -29,6 +42,7 @@ Grid::Grid(int rows, int cols): current_grid(&grid_a), next_grid(&grid_b)
         {
             grid_a[i][j] = UnitType::NONE;
             grid_b[i][j] = UnitType::NONE;
+            resolutions[i][j] = UnitType::NONE; // Not strictly speaking necessary.
         }
     }
 }
@@ -67,7 +81,7 @@ void Grid::move_unit(int row, int col, Direction direction) {
         case LEFT:
             if (col == 0)
             {
-                new_col = current_grid->size() - 1;
+                new_col = current_grid[row].size() - 1;
             }
             else
             {
@@ -76,7 +90,7 @@ void Grid::move_unit(int row, int col, Direction direction) {
             new_row = row;
             break;
         case RIGHT:
-            if (col == current_grid->size() - 1)
+            if (col == current_grid[row].size() - 1)
             {
                 new_col = 0;
             }
@@ -97,7 +111,7 @@ void Grid::move_unit(int row, int col, Direction direction) {
     else
     {
         ng[row][col] = UnitType::KABOOM;
-        resolutions.emplace_back(row, col, winner(cg[row][col], ng[row][col]));
+        resolutions[row][col] = winner(cg[row][col], ng[row][col]);
     }
 
 }
@@ -120,26 +134,14 @@ UnitType Grid::winner(UnitType unit_a, UnitType unit_b) {
         return UnitType::NONE;
     }
 
-    return resolutionMatrix[static_cast<int>(unit_a)][static_cast<int>(unit_b)];
+    return winner_matrix[static_cast<int>(unit_a)][static_cast<int>(unit_b)];
 }
 
 void Grid::add_unit(int row, int col, UnitType type) {
     (*current_grid)[row][col] = type;
 }
 
-int Grid::find_resolution(int row, int col)
-{
 
-    for (int idx = 0; idx < resolutions.size(); idx++)
-    {
-        if (resolutions[idx].row == row && resolutions[idx].col == col)
-        {
-            return idx;
-        }
-    }
-
-    return -1;
-}
 
 void Grid::process_resolutions()
 {
@@ -148,14 +150,10 @@ void Grid::process_resolutions()
     auto& ng = *next_grid;
 
     for_all(ng, [this](int row, int col, vector<vector<UnitType>> &grid) {
-        if (grid[row][col] != UnitType::KABOOM)
-            return;
-
-        int resolution_idx = find_resolution(row, col);
-        if (resolution_idx == -1)
-            return;
-        grid[row][col] = resolutions[resolution_idx].type;
-        resolutions.erase(std::next(resolutions.begin(),resolution_idx));
+        if (grid[row][col] == UnitType::KABOOM)
+        {
+            grid[row][col] = resolutions[row][col];
+        }
     });
 }
 
@@ -168,7 +166,21 @@ void Grid::process_moves()
         if (grid[row][col] == UnitType::NONE || grid[row][col] == UnitType::KABOOM)
             return;
 
-        auto direction = static_cast<Direction>(rand() % Direction::NONE);
+        Direction direction; //= static_cast<Direction>(rand() % Direction::NONE);
+        switch(grid[row][col])
+        {
+            case UnitType::ROCK:
+                direction = Direction::RIGHT;
+                break;
+
+            case UnitType::SCISSORS:
+                direction = Direction::LEFT;
+                break;
+
+            default:
+                direction = Direction::NONE;
+
+        }
         move_unit(row, col, direction);
     });
 }
@@ -198,4 +210,9 @@ char Grid::get_string(int row, int col)
 {
     UnitType type = current_grid->at(row).at(col);
     return RepresentationMatrix[static_cast<int>(type)];
+}
+
+UnitType Grid::get_unit_type(int row, int col)
+{
+    return current_grid->at(row).at(col);
 }

@@ -18,11 +18,11 @@ typedef struct cmd_options
 void fill_grid(Grid grid)
 {
     auto& cg = *grid.get_current_grid();
-    for (int row = 0; row < cg.size(); row++)
+    for (unsigned int row = 0; row < cg.size(); row++)
     {
-        for (int col = 0; col < cg[row].size(); col++)
+        for (unsigned int col = 0; col < cg[row].size(); col++)
         {
-            cg[row][col] = static_cast<UnitType>(rand() % static_cast<int>(UnitType::NONE));
+            cg[row][col].set_type(static_cast<UnitType>(rand() % static_cast<int>(UnitType::NONE)));
         }
     }
 }
@@ -30,8 +30,8 @@ void fill_grid(Grid grid)
 void grid_test(Grid grid)
 {
     auto& cg = *grid.get_current_grid();
-    cg[cg.size() / 2][0] = UnitType::ROCK;
-    cg[cg.size() / 2][cg[0].size() - 1] = UnitType::SCISSORS;
+    cg[cg.size() / 2][0].set_type(UnitType::ROCK);
+    cg[cg.size() / 2][cg[0].size() - 1].set_type(UnitType::SCISSORS);
 }
 
 cmd_options_t parse_args(int argc, char* argv[])
@@ -72,9 +72,9 @@ cmd_options_t parse_args(int argc, char* argv[])
 void draw_grid(Grid* grid, WINDOW* window)
 {
     auto& current_grid = *grid->get_current_grid();
-    for (int row = 0 ; row < current_grid.size(); row++)
+    for (unsigned int row = 0 ; row < current_grid.size(); row++)
     {
-        for (int col = 0; col < current_grid[row].size(); col++)
+        for (unsigned int col = 0; col < current_grid[row].size(); col++)
         {
             UnitType type = grid->get_unit_type(row, col);
             int pair;
@@ -97,7 +97,7 @@ void draw_grid(Grid* grid, WINDOW* window)
                     break;
             }
             wattron(window, pair);
-            mvwaddch(window, row, col, grid->get_string(row, col));
+            mvwaddch(window, row, col, grid->get_char(row, col));
             wattroff(window, pair);
         }
     }
@@ -138,8 +138,8 @@ int main(int argc, char *argv[]) {
     wtimeout(inner_window, 0);
 
     auto grid = Grid(cmd_options.rows - 3, cmd_options.cols - 2);
-    //fill_grid(grid);
-    grid_test(grid);
+    fill_grid(grid);
+    //grid_test(grid);
 
     char val = '\0';
     long duration = 0;

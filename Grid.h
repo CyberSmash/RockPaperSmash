@@ -128,6 +128,9 @@ private:
      */
     void preprocess_moves();
 
+
+    vector<Point> get_neighbors(int row, int col);
+
     vector<vector<Unit>> grid_a;
     vector<vector<Unit>> grid_b;
     vector<vector<Unit>>* current_grid;

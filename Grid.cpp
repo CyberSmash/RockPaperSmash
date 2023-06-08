@@ -164,18 +164,83 @@ void Grid::preprocess_moves()
     });
 }
 
+vector<Point> Grid::get_neighbors(int row, int col)
+{
+    vector<Point> points;
+    if (row == 0)
+    {
+        points.emplace_back(next_grid->size() - 1, col);
+        points.emplace_back(row + 1, col);
+    }
+    else if (row == static_cast<int>(next_grid->size() - 1))
+    {
+        points.emplace_back(0, col);
+        points.emplace_back(row - 1, col);
+    }
+    else
+    {
+        points.emplace_back(row - 1, col);
+        points.emplace_back(row + 1, col);
+    }
+
+    if (col == 0)
+    {
+        points.emplace_back(row, next_grid->at(row).size() - 1);
+        points.emplace_back(row, col + 1);
+    }
+    else if (col == static_cast<int>(next_grid->at(row).size() - 1))
+    {
+        points.emplace_back(row, 0);
+        points.emplace_back(row, col - 1);
+    }
+    else
+    {
+        points.emplace_back(row, col - 1);
+        points.emplace_back(row, col + 1);
+    }
+
+    return points;
+
+}
+
 void Grid::process_moves()
 {
     auto& cg = *current_grid;
     auto& ng = *next_grid;
 
     for_all(cg, [this, ng](int row, int col, vector<vector<Unit>> &grid) {
+        Point current_point(row, col);
         UnitType current_type = grid[row][col].get_type();
         if (current_type == UnitType::NONE || current_type == UnitType::KABOOM)
             return;
 
 
         Point next_point = grid[row][col].get_next_move();
+        vector<Point> neighbors = get_neighbors(row, col);
+
+        if (grid[next_point.row][next_point.col].get_type() != UnitType::NONE
+        && grid[next_point.row][next_point.col].get_next_move() == current_point)
+
+        {
+            // Determine who the winner would be
+            UnitType win_result = winner(grid[next_point.row][next_point.col].get_type(), current_type);
+            if (win_result == current_type)
+            {
+                // We won, so update the resolution, but add a kaboom at our next location
+                resolutions[next_point.row][next_point.col].set_type(win_result);
+                (*next_grid)[next_point.row][next_point.col].set_type(UnitType::KABOOM);
+                grid[next_point.row][next_point.col].set_type(UnitType::NONE);
+            }
+            else
+            {
+                // We lost, so update the resolution, but add a kaboom at our current location
+                resolutions[row][col].set_type(win_result);
+                (*next_grid)[row][col].set_type(UnitType::KABOOM);
+                grid[next_point.row][next_point.col].set_type(UnitType::NONE);
+            }
+
+        }
+
         if ((*next_grid)[next_point.row][next_point.col].get_type() != UnitType::NONE)
         {
             UnitType the_winner = winner(grid[row][col].get_type(), (*next_grid)[next_point.row][next_point.col].get_type());

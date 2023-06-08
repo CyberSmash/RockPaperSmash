@@ -138,8 +138,8 @@ int main(int argc, char *argv[]) {
     wtimeout(inner_window, 0);
 
     auto grid = Grid(cmd_options.rows - 3, cmd_options.cols - 2);
-    fill_grid(grid);
-    //grid_test(grid);
+    //fill_grid(grid);
+    grid_test(grid);
 
     char val = '\0';
     long duration = 0;

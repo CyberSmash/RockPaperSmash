@@ -5,6 +5,7 @@
 #include "Grid.h"
 #include <ncurses.h>
 #include <stdlib.h>
+#include <cassert>
 
 auto for_all = [](auto& grid, auto func) {
     for (unsigned int i = 0; i < grid.size(); i++)
@@ -137,9 +138,9 @@ void Grid::add_unit(int row, int col, UnitType type) {
 
 void Grid::process_resolutions()
 {
-    auto& ng = *next_grid;
+    auto& cg = *current_grid;
 
-    for_all(ng, [this](int row, int col, vector<vector<Unit>> &grid) {
+    for_all(cg, [this](int row, int col, vector<vector<Unit>> &grid) {
         if (grid[row][col].get_type() == UnitType::KABOOM)
         {
             grid[row][col].set_type(resolutions[row][col].get_type());
@@ -220,28 +221,26 @@ void Grid::process_moves()
 
         if (grid[next_point.row][next_point.col].get_type() != UnitType::NONE
         && grid[next_point.row][next_point.col].get_next_move() == current_point)
-
         {
             // Determine who the winner would be
             UnitType win_result = winner(grid[next_point.row][next_point.col].get_type(), current_type);
             if (win_result == current_type)
             {
                 // We won, so update the resolution, but add a kaboom at our next location
-                resolutions[next_point.row][next_point.col].set_type(win_result);
+                resolutions[next_point.row][next_point.col].set_type(current_type);
                 (*next_grid)[next_point.row][next_point.col].set_type(UnitType::KABOOM);
-                grid[next_point.row][next_point.col].set_type(UnitType::NONE);
             }
             else
             {
                 // We lost, so update the resolution, but add a kaboom at our current location
                 resolutions[row][col].set_type(win_result);
                 (*next_grid)[row][col].set_type(UnitType::KABOOM);
-                grid[next_point.row][next_point.col].set_type(UnitType::NONE);
             }
-
+            grid[next_point.row][next_point.col].set_type(UnitType::NONE);
+            grid[row][col].set_type(UnitType::NONE);
         }
 
-        if ((*next_grid)[next_point.row][next_point.col].get_type() != UnitType::NONE)
+        else if ((*next_grid)[next_point.row][next_point.col].get_type() != UnitType::NONE)
         {
             UnitType the_winner = winner(grid[row][col].get_type(), (*next_grid)[next_point.row][next_point.col].get_type());
             resolutions[next_point.row][next_point.col].set_type(the_winner);
